@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindbody</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #F3F3F3;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 50px 0;
+            font-size: 2.5em;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        input[type="text"], input[type="password"] {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #6C63FF;
+            outline: none;
+        }
+
+        input[type="submit"], input[type="button"] {
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #6C63FF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="submit"]:hover, input[type="button"]:hover {
+            background-color: #5948D6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mindbody Bot</h1>
+    
+    <form action="/book" method="POST" onsubmit="submitForm()">
+        OKAY
+        Email: <input type="text" name="email" required><br>
+        Password: <input type="password" name="password" required><br>
+        Lane (1-3): <input type="text" name="lane" required><br>
+        Start Time (Ex: 8): <input type="text" name="stime" required>
+        <input type="button" id="halfHourBtn" value="Add a Half Hour" onclick="toggleHalfHour()"><br>
+        AM/PM (Caps): <input type="text" name="tod" required><br>
+        Month (Ex: 6): <input type="text" name="month" required><br>
+        Day (Ex: 4): <input type="text" name="day" required><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        var halfHourSelected = false;
+
+        function toggleHalfHour() {
+            var btn = document.getElementById("halfHourBtn");
+            halfHourSelected = !halfHourSelected;
+
+            if (halfHourSelected) {
+                btn.style.backgroundColor = "#5948D6";
+                btn.value = "Remove Half Hour";
+            } else {
+                btn.style.backgroundColor = "#6C63FF";
+                btn.value = "Add a Half Hour";
+            }
+        }
+
+        function submitForm() {
+            var form = document.getElementsByTagName("form")[0];
+            var halfHourInput = document.createElement("input");
+            halfHourInput.type = "hidden";
+            halfHourInput.name = "halfHourSelected"
+            halfHourInput.value = halfHourSelected ? "true" : "false";
+            form.appendChild(halfHourInput);
+        }
+    </script>
+</body>
+</html>
