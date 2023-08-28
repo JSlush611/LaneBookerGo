@@ -178,11 +178,11 @@ func (b *Booker) PerformLogin() {
 	}
 
 	defer resp.Body.Close()
-	//body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
 	}
-	//log.Println("LOGIN BODY:", string(body))
+	log.Println("LOGIN BODY:", string(body))
 }
 
 func (b *Booker) PrepareBooking() {
