@@ -1,7 +1,7 @@
 # app.yaml
 
 # Application ID and version
-application: mindbodygo-1.0
+application: mindbodygo-app
 version: 1
 
 # Use the Go 1.11 runtime

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -14,9 +14,11 @@ func main() {
 	http.Handle("/book", http.HandlerFunc(Progress))
 	http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
 
-	log.Println("Starting serverr on port 8080...")
+	port := os.Getenv("PORT") // Get the port from the environment variable
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+port, nil)
+
+	http.ListenAndServe(port, nil)
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
