@@ -1,7 +1,4 @@
-# app.yaml
-
-# Application ID and version
-application: mindbodygo-app
+application: mindbodygo-1.0
 version: 1
 
 # Use the Go 1.11 runtime
@@ -16,7 +13,4 @@ handlers:
   static_dir: static
 
 - url: /.*
-  script: auto 
-  
-# Declare the module that contains the main function  
-entrypoint: MBBot
+  script: auto
