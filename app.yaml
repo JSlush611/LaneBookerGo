@@ -1,15 +1,3 @@
-# Use the Go 1.11 runtime
 runtime: go121
 
-# Service name, should match main module/package name
-service: lanebookergo
 
-# Handle all requests to the root URL
-handlers:
-- url: /static
-  static_dir: static
-
-- url: /.*
-  script: auto
-  
-entrypoint: MBBot
