@@ -108,12 +108,12 @@ input[type="button"]:hover {
 /* Initiate */
 .initiate {
     font-size: 2.5em;
-    color: #333; /* Dark text color */
+    color: #333; 
     margin-bottom: 20px;
 }
 
 .container {
-    background-color: #FFFFFF; /* White container background */
+    background-color: #FFFFFF; 
     max-width: 600px;
     margin: 0 auto;
     padding: 20px;
@@ -142,3 +142,38 @@ input[type="button"]:hover {
 .image {
     max-width: 100%;
 }
+
+
+/* Instructions */
+.instructions-container {
+    background-color: #455d7a;
+    max-width: 1000px; 
+    margin: 0 auto;
+    padding: 40px 60px; 
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+/* Instructions List */
+.instruction-list {
+    list-style-type: none;
+    padding: 0;
+    text-align: center; 
+}
+
+.instruction-item {
+    background-color: #f4f4f4;
+    padding: 15px; 
+    border-radius: 5px;
+    margin-bottom: 15px; 
+    font-size: 1.2em; 
+    color: #333;
+}
+
+
+

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -64,7 +63,7 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	booker.LaneId = booker.LaneToTrin[booker.Lane]
 
 	now := time.Now()
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 4, 45, 20, 0, now.Location())
+	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 19, 10, 0, 0, now.Location())
 
 	if now.After(targetTime) {
 		targetTime = targetTime.Add(24 * time.Hour)
@@ -73,19 +72,19 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	duration := targetTime.Sub(now)
 
 	go func() {
-		fmt.Println("SLEEPING for ", duration)
+		log.Println("SLEEPING for ", duration)
 
-		//time.Sleep(duration)
+		time.Sleep(duration)
 
 		startTime := time.Now()
 
-		fmt.Println("STARTING AT ", startTime.Format("15:04:05"))
+		log.Println("STARTING AT ", startTime.Format("15:04:05"))
 		booker.PerformLogin()
 		booker.PrepareBooking()
 		booker.CompleteBooking()
 
 		duration := time.Since(startTime)
-		fmt.Println("Booking Completed in ", duration, " seconds")
+		log.Println("Booking Completed in ", duration, " seconds")
 	}()
 
 	http.ServeFile(w, r, "static/initiate.html")
