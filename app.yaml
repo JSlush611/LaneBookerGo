@@ -1,0 +1,22 @@
+# app.yaml
+
+# Application ID and version
+application: mindbodygo-1.0
+version: 1
+
+# Use the Go 1.11 runtime
+runtime: go121
+
+# Service name, should match main module/package name
+service: LaneBookerGo
+
+# Handle all requests to the root URL
+handlers:
+- url: /static
+  static_dir: static
+
+- url: /.*
+  script: auto 
+  
+# Declare the module that contains the main function  
+entrypoint: MBBot
