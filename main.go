@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -14,11 +15,17 @@ func main() {
 	http.Handle("/book", http.HandlerFunc(Progress))
 	http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
 
-	port := os.Getenv("PORT") // Get the port from the environment variable
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
 
-	http.ListenAndServe(":"+port, nil)
+	log.Printf("Listening on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 
-	http.ListenAndServe(port, nil)
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
