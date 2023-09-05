@@ -9,9 +9,10 @@ import (
 )
 
 func main() {
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.Handle("/", http.HandlerFunc(HomePage))
 	http.Handle("/book", http.HandlerFunc(Progress))
-	http.Handle("/ok.png", http.HandlerFunc(serveImage))
+	http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
 
 	log.Println("Starting serverr on port 8080...")
 
@@ -19,7 +20,7 @@ func main() {
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
+	http.ServeFile(w, r, "static/index.html")
 }
 
 func Progress(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +56,6 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 4, 45, 20, 0, now.Location())
-	//targetTime := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 20, 0, now.Location())
 
 	if now.After(targetTime) {
 		targetTime = targetTime.Add(24 * time.Hour)
@@ -79,5 +79,5 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Booking Completed in ", duration, " seconds")
 	}()
 
-	http.ServeFile(w, r, "initiate.html")
+	http.ServeFile(w, r, "static/initiate.html")
 }
