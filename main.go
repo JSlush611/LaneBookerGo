@@ -62,8 +62,13 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 
 	booker.LaneId = booker.LaneToTrin[booker.Lane]
 
+	location, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	now := time.Now()
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 19, 22, 0, 0, now.Location())
+	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 19, 40, 0, 0, location)
 
 	if now.After(targetTime) {
 		targetTime = targetTime.Add(24 * time.Hour)
@@ -72,13 +77,13 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	duration := targetTime.Sub(now)
 
 	go func() {
-		log.Println("SLEEPING for ", duration)
+		log.Println("NOW SLEEPING FOR ", duration)
 
 		time.Sleep(duration)
 
 		startTime := time.Now()
 
-		log.Println("STARTING AT ", startTime.Format("15:04:05"))
+		log.Println("NOW STARTING AT ", startTime.Format("15:04:05"))
 		booker.PerformLogin()
 		booker.PrepareBooking()
 		booker.CompleteBooking()
