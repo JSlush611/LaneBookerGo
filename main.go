@@ -63,7 +63,7 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	booker.LaneId = booker.LaneToTrin[booker.Lane]
 
 	now := time.Now()
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 19, 10, 0, 0, now.Location())
+	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 19, 20, 0, 0, now.Location())
 
 	if now.After(targetTime) {
 		targetTime = targetTime.Add(24 * time.Hour)
