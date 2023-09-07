@@ -70,7 +70,7 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	log.Println("CURRENT TIME", now)
 
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 16, 30, 0, 0, location)
+	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 17, 00, 0, 0, location)
 	log.Println("TARGET TIME", targetTime)
 
 	if now.After(targetTime) {
@@ -89,7 +89,7 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 		log.Println("NOW STARTING AT ", startTime.Format("15:04:05"))
 		booker.PerformLogin()
 		booker.PrepareBooking()
-		//booker.CompleteBooking()
+		booker.CompleteBooking()
 
 		duration := time.Since(startTime)
 		log.Println("Booking Completed in ", duration, " seconds")
