@@ -62,24 +62,26 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 
 	booker.LaneId = booker.LaneToTrin[booker.Lane]
 
-	location, err := time.LoadLocation("America/Chicago")
+	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	now := time.Now()
+	now := time.Now().In(loc)
 	log.Println("CURRENT TIME", now)
 
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 20, 00, 0, 0, location)
+	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 20, 15, 0, 0, loc)
 	log.Println("TARGET TIME", targetTime)
 
-	if now.After(targetTime) {
-		targetTime = targetTime.Add(24 * time.Hour)
+	var duration time.Duration
+	if now.Before(targetTime) {
+		duration = targetTime.Sub(now)
+	} else {
+		targetTime = targetTime.Add(24*time.Hour - 1*time.Nanosecond)
+		duration = targetTime.Sub(now)
 	}
 
-	duration := targetTime.Sub(now)
-
-	go func() {
+	go func(dur time.Duration) {
 		log.Println("NOW SLEEPING FOR ", duration)
 
 		time.Sleep(duration)
@@ -93,7 +95,7 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 
 		duration := time.Since(startTime)
 		log.Println("Booking Completed in ", duration, " seconds")
-	}()
+	}(duration)
 
 	http.ServeFile(w, r, "static/initiate.html")
 }
