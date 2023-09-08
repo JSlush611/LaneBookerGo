@@ -70,7 +70,7 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	log.Println("CURRENT TIME", now)
 
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 17, 00, 0, 0, location)
+	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 20, 00, 0, 0, location)
 	log.Println("TARGET TIME", targetTime)
 
 	if now.After(targetTime) {
