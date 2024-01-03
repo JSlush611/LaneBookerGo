@@ -1,53 +1,59 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
 )
 
-func setupBooker(booker *Booker) {
-	booker.LaneToTrin = make(map[int]int)
+func setupBooker(booker *Booker) error {
+	initializeLaneMappings(booker)
+	calculateBookingTimes(booker)
 
-	// OUTSIDE
-	booker.LaneToTrin[1] = 100000301
-	booker.LaneToTrin[2] = 100000302
-	booker.LaneToTrin[3] = 100000303
+	if err := booker.NewClient(); err != nil {
+		return fmt.Errorf("error initializing new client: %w", err)
+	}
 
-	// INSIDE 30 minutes
-	booker.LaneToTrin[91] = 100000212
-	booker.LaneToTrin[92] = 100000213
+	if err := booker.GetInitialCookies(); err != nil {
+		return fmt.Errorf("error getting initial cookies: %w", err)
+	}
 
-	// INSIDE 60 minutes
-	booker.LaneToTrin[93] = 100000237
-	booker.LaneToTrin[94] = 100000215
-	booker.LaneToTrin[95] = 100000216
-	booker.LaneToTrin[96] = 100000217
+	booker.FormatLoginWebsite()
+	return nil
+}
 
+func initializeLaneMappings(booker *Booker) {
+	booker.LaneToTrin = map[int]int{
+		1:  100000301, // OUTSIDE
+		2:  100000302,
+		3:  100000303,
+		91: 100000212, // INSIDE 30 minutes
+		92: 100000213,
+		93: 100000237, // INSIDE 60 minutes
+		94: 100000215,
+		95: 100000216,
+		96: 100000217,
+	}
+}
+
+func calculateBookingTimes(booker *Booker) {
 	booker.STime2 = booker.STime.Add(30 * time.Minute)
 	booker.ETime = booker.STime2
 	booker.ETime2 = booker.STime2.Add(30 * time.Minute)
-
-	booker.NewClient()
-	booker.GetInitialCookies()
-	booker.FormatLoginWebsite()
-
 }
 
 func serveImage(w http.ResponseWriter, r *http.Request) {
-	imageFile, err := os.Open("ok.png")
+	imageFile, err := os.Open("smileyface.png")
 	if err != nil {
-		http.Error(w, "Failed to open image file", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error opening image file: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer imageFile.Close()
 
 	w.Header().Set("Content-Type", "image/png")
-
-	_, err = io.Copy(w, imageFile)
-	if err != nil {
-		http.Error(w, "Failed to write image data", http.StatusInternalServerError)
-		return
+	if _, err := io.Copy(w, imageFile); err != nil {
+		http.Error(w, fmt.Sprintf("Error writing image data: %v", err), http.StatusInternalServerError)
 	}
 }

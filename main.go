@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +12,7 @@ import (
 func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.Handle("/", http.HandlerFunc(HomePage))
-	http.Handle("/book", http.HandlerFunc(Progress))
+	http.Handle("/book", http.HandlerFunc(Book))
 	http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
 
 	port := os.Getenv("PORT")
@@ -31,23 +32,23 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/index.html")
 }
 
-func Progress(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-
+func initializeBookerFromRequest(r *http.Request) (*Booker, error) {
 	booker := &Booker{}
+	var err error
+
 	booker.Username = r.FormValue("email")
 	booker.Password = r.FormValue("password")
 
-	var err error
 	booker.Lane, err = strconv.Atoi(r.FormValue("lane"))
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("invalid lane number: %v", err)
 	}
 
 	RawSTime := r.FormValue("stime")
+
 	booker.STime, err = time.Parse("15", RawSTime)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("invalid start time: %v", err)
 	}
 
 	if r.FormValue("halfHourSelected") == "true" {
@@ -58,22 +59,19 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 	booker.Month = r.FormValue("month")
 	booker.Day = r.FormValue("day")
 
-	setupBooker(booker)
+	return booker, nil
+}
 
-	booker.LaneId = booker.LaneToTrin[booker.Lane]
-
+func calculateBookingTime(booker *Booker) (time.Duration, error) {
 	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	now := time.Now().In(loc)
-	log.Println("CURRENT TIME", now)
-
 	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 20, 45, 0, 0, loc)
-	log.Println("TARGET TIME", targetTime)
-
 	var duration time.Duration
+
 	if now.Before(targetTime) {
 		duration = targetTime.Sub(now)
 	} else {
@@ -81,21 +79,49 @@ func Progress(w http.ResponseWriter, r *http.Request) {
 		duration = targetTime.Sub(now)
 	}
 
-	go func(dur time.Duration) {
-		log.Println("NOW SLEEPING FOR ", duration)
+	return duration, nil
+}
 
-		time.Sleep(duration)
+func conductBooking(booker *Booker, duration time.Duration) {
+	go func(dur time.Duration) {
+		log.Println("NOW SLEEPING FOR ", dur)
+
+		//time.Sleep(dur)
 
 		startTime := time.Now()
-
 		log.Println("NOW STARTING AT ", startTime.Format("15:04:05"))
+
 		booker.PerformLogin()
 		booker.PrepareBooking()
 		booker.CompleteBooking()
 
-		duration := time.Since(startTime)
-		log.Println("Booking Completed in ", duration, " seconds")
+		elapsed := time.Since(startTime)
+		log.Println("Booking Completed in ", elapsed, " seconds")
 	}(duration)
+}
 
-	http.ServeFile(w, r, "static/initiate.html")
+func Book(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	booker, err := initializeBookerFromRequest(r)
+	if err != nil {
+		log.Printf("Error initializing booker: %v", err)
+		http.Error(w, "Error processing booking request", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Tod: %s\n", booker.TOD)
+
+	setupBooker(booker)
+
+	booker.LaneId = booker.LaneToTrin[booker.Lane]
+	fmt.Printf("Lane: %d, LaneId: %d\n", booker.Lane, booker.LaneId)
+
+	duration, err := calculateBookingTime(booker)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conductBooking(booker, duration)
+	http.ServeFile(w, r, "static/scheduled.html")
 }
