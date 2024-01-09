@@ -1,0 +1,21 @@
+runtime: go121
+env: standard
+
+handlers:
+# Serve static files (note that static_dir is relative to the location of app.yaml)
+- url: /static
+  static_dir: static
+
+# Serve your index.html as the default page
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
+
+# Serve other HTML files
+- url: /(.*\.html)
+  static_files: static/\1
+  upload: static/.*\.html
+
+# The Go application will handle all other requests not caught by the above patterns
+- url: /.*
+  script: auto

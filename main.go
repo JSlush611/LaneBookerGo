@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.Handle("/", http.HandlerFunc(HomePage))
+	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	//http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
+	//http.Handle("/", http.HandlerFunc(HomePage))
 	http.Handle("/book", http.HandlerFunc(Book))
-	http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
 
 	port := os.Getenv("PORT")
 	if port == "" {
