@@ -1,0 +1,5 @@
+cron:
+  - description: "Daily booking process"
+    url: /processBookings
+    schedule: every day 4:45
+    timezone: America/Chicago

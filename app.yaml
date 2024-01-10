@@ -1,6 +1,8 @@
 runtime: go121
 env: standard
 
+app_engine_apis: true
+
 handlers:
 # Serve static files (note that static_dir is relative to the location of app.yaml)
 - url: /static

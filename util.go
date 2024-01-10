@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 	"time"
 )
 
@@ -42,18 +39,4 @@ func calculateBookingTimes(booker *Booker) {
 	booker.STime2 = booker.STime.Add(30 * time.Minute)
 	booker.ETime = booker.STime2
 	booker.ETime2 = booker.STime2.Add(30 * time.Minute)
-}
-
-func serveImage(w http.ResponseWriter, r *http.Request) {
-	imageFile, err := os.Open("smileyface.png")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error opening image file: %v", err), http.StatusInternalServerError)
-		return
-	}
-	defer imageFile.Close()
-
-	w.Header().Set("Content-Type", "image/png")
-	if _, err := io.Copy(w, imageFile); err != nil {
-		http.Error(w, fmt.Sprintf("Error writing image data: %v", err), http.StatusInternalServerError)
-	}
 }

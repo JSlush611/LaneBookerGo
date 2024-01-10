@@ -32,26 +32,28 @@ func (t *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 type Booker struct {
-	Client         *http.Client
-	Date           string
-	Username       string
-	Password       string
-	LoginData      string
-	LaneToTrin     map[int]int
-	Lane           int
-	LaneId         int
-	IdentifierData string
-	Day            string
-	Month          string
-	STime          time.Time
-	STime2         time.Time
-	ETime          time.Time
-	ETime2         time.Time
-	TOD            string
-	frmPmtRefNo    string
-	frmClientID    string
-	CSRF           string
-	TGID           string
+	Client           *http.Client
+	Date             string
+	Username         string
+	Password         string
+	LoginData        string
+	LaneToTrin       map[int]int
+	Lane             int
+	LaneId           int
+	IdentifierData   string
+	Day              string
+	Month            string
+	RawSTime         string
+	STime            time.Time
+	STime2           time.Time
+	ETime            time.Time
+	ETime2           time.Time
+	TOD              string
+	frmPmtRefNo      string
+	frmClientID      string
+	CSRF             string
+	TGID             string
+	halfHourSelected bool
 }
 
 func (b *Booker) NewClient() error {

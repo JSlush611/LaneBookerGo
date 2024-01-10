@@ -10,10 +10,13 @@ import (
 )
 
 func main() {
-	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	//http.Handle("/smileyface.png", http.HandlerFunc(serveImage))
 	//http.Handle("/", http.HandlerFunc(HomePage))
+	//http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.Handle("/saveBooking", http.HandlerFunc(SaveBookingHandler))
 	http.Handle("/book", http.HandlerFunc(Book))
+	http.Handle("/processBookings", http.HandlerFunc(TriggerSendBookRequestsHandler))
+
+	initFirestore()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -25,11 +28,30 @@ func main() {
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/index.html")
+}
+
+func SaveBookingHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	booker, err := initializeBookerFromRequest(r)
+	if err != nil {
+		log.Printf("Error initializing booker: %v", err)
+		http.Error(w, "Error processing booking request", http.StatusBadRequest)
+		return
+	}
+
+	err = StoreLaneBooking(r.Context(), booker)
+	if err != nil {
+		log.Printf("Error saving booking to database: %v", err)
+		http.Error(w, "Error saving booking to database", http.StatusInternalServerError)
+		return
+	}
+
+	http.ServeFile(w, r, "static/scheduled.html")
 }
 
 func initializeBookerFromRequest(r *http.Request) (*Booker, error) {
@@ -44,14 +66,15 @@ func initializeBookerFromRequest(r *http.Request) (*Booker, error) {
 		return nil, fmt.Errorf("invalid lane number: %v", err)
 	}
 
-	RawSTime := r.FormValue("stime")
+	booker.RawSTime = r.FormValue("stime")
 
-	booker.STime, err = time.Parse("15", RawSTime)
+	booker.STime, err = time.Parse("15", booker.RawSTime)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start time: %v", err)
 	}
 
 	if r.FormValue("halfHourSelected") == "true" {
+		booker.halfHourSelected = true
 		booker.STime = booker.STime.Add(30 * time.Minute)
 	}
 
@@ -107,15 +130,13 @@ func Book(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error initializing booker: %v", err)
 		http.Error(w, "Error processing booking request", http.StatusBadRequest)
+
 		return
 	}
-
-	fmt.Printf("Tod: %s\n", booker.TOD)
 
 	setupBooker(booker)
 
 	booker.LaneId = booker.LaneToTrin[booker.Lane]
-	fmt.Printf("Lane: %d, LaneId: %d\n", booker.Lane, booker.LaneId)
 
 	duration, err := calculateBookingTime(booker)
 	if err != nil {
@@ -123,5 +144,6 @@ func Book(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conductBooking(booker, duration)
+
 	http.ServeFile(w, r, "static/scheduled.html")
 }
