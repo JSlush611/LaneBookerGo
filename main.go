@@ -10,8 +10,8 @@ import (
 )
 
 func main() {
-	//http.Handle("/", http.HandlerFunc(HomePage))
-	//http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.Handle("/", http.HandlerFunc(HomePage))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.Handle("/saveBooking", http.HandlerFunc(SaveBookingHandler))
 	http.Handle("/book", http.HandlerFunc(Book))
 	http.Handle("/processBookings", http.HandlerFunc(TriggerSendBookRequestsHandler))

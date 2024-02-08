@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -123,13 +124,13 @@ func (b *Booker) PerformLogin() error {
 	}
 
 	defer resp.Body.Close()
-	//body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		return fmt.Errorf("error performing login: %w", err)
 	}
 
-	//log.Println("LOGIN BODY:", string(body))
+	log.Println("LOGIN BODY:", string(body))
 	return nil
 }
 
@@ -207,6 +208,16 @@ func (b *Booker) PrepareBooking() error {
 
 func (b *Booker) CompleteBooking() error {
 	stimeFormat := "3:04:05 PM"
+
+	if b.TOD == "PM" {
+		if b.STime.Hour() < 12 {
+			b.STime = b.STime.Add(time.Hour * 12)
+		}
+		if b.ETime.Hour() < 12 {
+			b.ETime = b.ETime.Add(time.Hour * 12)
+		}
+	}
+
 	stime := b.STime.Format(stimeFormat)
 	etime := b.ETime.Format(stimeFormat)
 
@@ -231,7 +242,6 @@ func (b *Booker) CompleteBooking() error {
 	}
 
 	reqURL := fmt.Sprintf("https://clients.mindbodyonline.com/asp/adm/adm_appt_ap.asp?trnid=%d&rtrnid=&Date=%s&tgid=%s&tgBlockLength=%s&reSchedule=&origTrn=&origDate=&origId=&cType=", b.LaneId, url.QueryEscape(b.Date), b.TGID, blocklen)
-
 	CSRF := fmt.Sprintf("CSRFToken=%s&frmApptDate=%s&frmPmtRefNo=%s&reSchedule=&origId=&frmRtnAction=appt_con.asp%%3Floc%%3D1%%26tgid%%3D%s%%26trnid%%3D%d%%26rtrnid%%3D%d%%26date%%3D%s%%26clientid%%3D%%26Stime%%3D%s%%26Etime%%3D%s%%26rstime%%3D%%26retime%%3D%%26mask%%3DFalse%%26optResfor%%3D&frmRtnScreen=appt_con&frmProdVTID=%s&frmUseXRegDB=0&frmXStudioID=&optReservedFor=&optPaidForOther=&OptSelf=&optLocation=1&optInstructor=%d&optVisitType=%s&frmClientID=%s&frmTrainerID=%d&tgCapacity=1&optStartTime=%s&optEndTime=%s&txtNotes=&Submit=Book+Appointment&name=https%%3A%%2F%%2Fclients.mindbodyonline.com%%2Fclassic%%2Fws%%3Fstudioid%%3D25730", b.CSRF, url.QueryEscape(b.Date), b.frmPmtRefNo, b.TGID, b.LaneId, b.LaneId, url.QueryEscape(b.Date), url.QueryEscape(stime), url.QueryEscape(etime), visitType, b.LaneId, visitType, b.frmClientID, b.LaneId, url.QueryEscape(stime), url.QueryEscape(etime))
 
 	var data = strings.NewReader(CSRF)
@@ -256,11 +266,11 @@ func (b *Booker) CompleteBooking() error {
 	}
 	defer resp.Body.Close()
 
-	// body, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	//     panic(err)
-	// }
-	// fmt.Printf("Request Body: %s", body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Request Body: %s", body)
 
 	return nil
 }
