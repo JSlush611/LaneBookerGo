@@ -22,8 +22,6 @@ import (
 const maxRetries = 4
 const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
 
-// Utility Functions
-
 // isSuccessfulResponse checks if the response contains the success indicator
 func isSuccessfulResponse(resp *http.Response) (bool, error) {
 	if resp.StatusCode != http.StatusOK {
@@ -46,8 +44,6 @@ func isSuccessfulResponse(resp *http.Response) (bool, error) {
 	return false, nil
 }
 
-// Custom Transport Definition
-
 type customTransport struct {
 	http.Transport
 }
@@ -63,8 +59,6 @@ func (t *customTransport) DialContext(ctx context.Context, network, addr string)
 func (t *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.Transport.RoundTrip(req)
 }
-
-// Booker Struct Definition and Methods
 
 type Booker struct {
 	Client           *http.Client
@@ -114,7 +108,17 @@ func (b *Booker) GetInitialCookies() error {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	b.setCommonHeaders(req)
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Referer", "https://clients.mindbodyonline.com/IdentityLogin/InitiateIdentityLogout")
+	req.Header.Set("Sec-Ch-Ua", `"Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"`)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", `"macOS"`)
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := b.Client.Do(req)
 	if err != nil {
@@ -137,8 +141,10 @@ func (b *Booker) PerformLogin() error {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	b.setCommonHeaders(req)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Referer", "https://clients.mindbodyonline.com/classic/ws?studioid=25730")
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := b.Client.Do(req)
 	if err != nil {
@@ -187,6 +193,18 @@ func (b *Booker) PrepareBooking() error {
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
+
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Referer", "https://clients.mindbodyonline.com/classic/ws?studioid=25730")
+	req.Header.Set("Sec-Ch-Ua", `"Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"`)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", `"macOS"`)
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := b.Client.Do(req)
 	if err != nil {
@@ -275,9 +293,14 @@ func (b *Booker) CompleteBooking() error {
 			return fmt.Errorf("error creating request: %w", err)
 		}
 
-		b.setCommonHeaders(req)
+		req.Header.Set("Host", "clients.mindbodyonline.com")
 		req.Header.Set("Content-Length", strconv.Itoa(data.Len()))
+		req.Header.Set("Upgrade-Insecure-Requests", "1")
+		req.Header.Set("Origin", "https://clients.mindbodyonline.com")
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("User-Agent", userAgent)
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
 		resp, err := b.Client.Do(req)
 		if err != nil {
@@ -292,13 +315,13 @@ func (b *Booker) CompleteBooking() error {
 		}
 
 		if successful {
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
+
 			if err != nil {
-				return fmt.Errorf("error reading response body: %w", err)
+				log.Printf("Error reading response body: %v", err)
+			} else {
+				log.Printf("Booking successful. Request Body: %s", string(body)[:200]) // Print first 200 characters
 			}
-
-			fmt.Printf("Request Body: %s", body)
-
 			return nil
 		}
 
@@ -306,11 +329,4 @@ func (b *Booker) CompleteBooking() error {
 	}
 
 	return fmt.Errorf("booking failed after %d attempts", maxRetries)
-}
-
-func (b *Booker) setCommonHeaders(req *http.Request) {
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
 }
