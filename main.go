@@ -9,12 +9,33 @@ import (
 	"time"
 )
 
+const (
+	username = "rip-mindbody"
+	password = "1_benfolds"
+)
+
+// Middleware for HTTP Basic Authentication
+func basicAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != username || pass != password {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
-	http.Handle("/", http.HandlerFunc(HomePage))
+	// Routes with Basic Auth Middleware
+	http.Handle("/", basicAuthMiddleware(http.HandlerFunc(HomePage)))
+	http.Handle("/saveBooking", basicAuthMiddleware(http.HandlerFunc(SaveBookingHandler)))
+	http.Handle("/processBookings", basicAuthMiddleware(http.HandlerFunc(TriggerSendBookRequestsHandler)))
+
+	// Routes without Basic Auth Middleware
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.Handle("/saveBooking", http.HandlerFunc(SaveBookingHandler))
 	http.Handle("/book", http.HandlerFunc(Book))
-	http.Handle("/processBookings", http.HandlerFunc(TriggerSendBookRequestsHandler))
 
 	initFirestore()
 
@@ -130,7 +151,6 @@ func Book(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error initializing booker: %v", err)
 		http.Error(w, "Error processing booking request", http.StatusBadRequest)
-
 		return
 	}
 

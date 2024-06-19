@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -58,6 +59,8 @@ func SendBookRequests(ctx context.Context) error {
 	iter := firestoreClient.Collection("laneJobs").Documents(ctx)
 	defer iter.Stop()
 
+	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte("rip-mindbody:1_benfolds"))
+
 	for {
 		doc, err := iter.Next()
 		if err != nil {
@@ -92,6 +95,7 @@ func SendBookRequests(ctx context.Context) error {
 
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("User-Agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
+		req.Header.Add("Authorization", authHeader)
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
