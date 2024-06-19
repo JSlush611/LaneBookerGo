@@ -17,18 +17,25 @@ const (
 // Middleware for HTTP Basic Authentication
 func basicAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Allow App Engine cron service
+		if r.Header.Get("X-AppEngine-Cron") == "true" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		user, pass, ok := r.BasicAuth()
+
 		if !ok || user != username || pass != password {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }
 
 func main() {
-	// Routes with Basic Auth Middleware
 	http.Handle("/", basicAuthMiddleware(http.HandlerFunc(HomePage)))
 	http.Handle("/saveBooking", basicAuthMiddleware(http.HandlerFunc(SaveBookingHandler)))
 	http.Handle("/processBookings", basicAuthMiddleware(http.HandlerFunc(TriggerSendBookRequestsHandler)))
