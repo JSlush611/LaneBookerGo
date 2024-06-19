@@ -328,5 +328,6 @@ func (b *Booker) CompleteBooking() error {
 		log.Printf("Booking not successful. Retrying... (%d/%d)", i+1, maxRetries)
 	}
 
+	log.Printf("booking failed after %d attempts", maxRetries)
 	return fmt.Errorf("booking failed after %d attempts", maxRetries)
 }

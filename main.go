@@ -32,10 +32,10 @@ func main() {
 	http.Handle("/", basicAuthMiddleware(http.HandlerFunc(HomePage)))
 	http.Handle("/saveBooking", basicAuthMiddleware(http.HandlerFunc(SaveBookingHandler)))
 	http.Handle("/processBookings", basicAuthMiddleware(http.HandlerFunc(TriggerSendBookRequestsHandler)))
+	http.Handle("/book", basicAuthMiddleware(http.HandlerFunc(Book)))
 
 	// Routes without Basic Auth Middleware
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.Handle("/book", http.HandlerFunc(Book))
 
 	initFirestore()
 
@@ -140,7 +140,7 @@ func conductBooking(booker *Booker, duration time.Duration) {
 		booker.CompleteBooking()
 
 		elapsed := time.Since(startTime)
-		log.Println("Booking Completed in ", elapsed, " seconds")
+		log.Println("Booking Attempted In ", elapsed, " seconds")
 	}(duration)
 }
 
