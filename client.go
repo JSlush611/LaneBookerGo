@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -16,11 +15,15 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/corpix/uarand"
 )
 
-// Constants
-const maxRetries = 4
-const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+const (
+	maxRetries           = 4
+	successLoginPattern  = `{"success":true,"json":{"success":true`
+	failureLoginPattern1 = `{"success":true,"json":{"success":false`
+	failureLoginPattern2 = `{"success":false,"sessionExpired":true}`
+)
 
 // isSuccessfulResponse checks if the response contains the success indicator
 func isSuccessfulResponse(resp *http.Response) (bool, error) {
@@ -28,7 +31,7 @@ func isSuccessfulResponse(resp *http.Response) (bool, error) {
 		return false, nil
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return false, err
 	}
@@ -83,6 +86,7 @@ type Booker struct {
 	CSRF             string
 	TGID             string
 	halfHourSelected bool
+	UserAgent        string
 }
 
 func (b *Booker) NewClient() error {
@@ -99,6 +103,9 @@ func (b *Booker) NewClient() error {
 		Jar:       jar,
 		Transport: transport,
 	}
+
+	b.UserAgent = uarand.GetRandom()
+
 	return nil
 }
 
@@ -118,7 +125,7 @@ func (b *Booker) GetInitialCookies() error {
 	req.Header.Set("Sec-Fetch-Mode", "navigate")
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", b.UserAgent)
 
 	resp, err := b.Client.Do(req)
 	if err != nil {
@@ -136,29 +143,49 @@ func (b *Booker) FormatLoginWebsite() {
 }
 
 func (b *Booker) PerformLogin() error {
-	req, err := http.NewRequest("POST", "https://clients.mindbodyonline.com/Login?studioID=25730&isLibAsync=true&isJson=true", strings.NewReader(b.LoginData))
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	for i := 0; i < maxRetries; i++ {
+		req, err := http.NewRequest("POST", "https://clients.mindbodyonline.com/Login?studioID=25730&isLibAsync=true&isJson=true", strings.NewReader(b.LoginData))
+		if err != nil {
+			return fmt.Errorf("error creating request: %w", err)
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("Referer", "https://clients.mindbodyonline.com/classic/ws?studioid=25730")
+		req.Header.Set("User-Agent", b.UserAgent)
+
+		resp, err := b.Client.Do(req)
+		if err != nil {
+			log.Printf("Error performing login: %v. Retrying... (%d/%d)", err, i+1, maxRetries)
+			b.NewClient()
+
+			continue
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("error reading response body: %w", err)
+		}
+
+		log.Println("Login body:", string(body))
+
+		// Check if login was successful or if the session expired
+		if strings.Contains(string(body), successLoginPattern) {
+			return nil
+		} else if strings.Contains(string(body), failureLoginPattern1) || strings.Contains(string(body), failureLoginPattern2) {
+			log.Printf("Login failed or session expired. Retrying... (%d/%d)", i+1, maxRetries)
+
+			b.NewClient()
+
+			continue
+		}
+
+		log.Printf("Unexpected login response. Retrying... (%d/%d)", i+1, maxRetries)
+		b.NewClient()
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Referer", "https://clients.mindbodyonline.com/classic/ws?studioid=25730")
-	req.Header.Set("User-Agent", userAgent)
-
-	resp, err := b.Client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error performing login: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("error reading response body: %w", err)
-	}
-
-	log.Println("LOGIN BODY:", string(body))
-	return nil
+	return fmt.Errorf("login failed after %d attempts", maxRetries)
 }
 
 func (b *Booker) PrepareBooking() error {
@@ -204,7 +231,7 @@ func (b *Booker) PrepareBooking() error {
 	req.Header.Set("Sec-Fetch-Mode", "navigate")
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", b.UserAgent)
 
 	resp, err := b.Client.Do(req)
 	if err != nil {
@@ -212,7 +239,7 @@ func (b *Booker) PrepareBooking() error {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("error reading response: %w", err)
 	}
@@ -298,7 +325,7 @@ func (b *Booker) CompleteBooking() error {
 		req.Header.Set("Upgrade-Insecure-Requests", "1")
 		req.Header.Set("Origin", "https://clients.mindbodyonline.com")
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Set("User-Agent", userAgent)
+		req.Header.Set("User-Agent", b.UserAgent)
 		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
 		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
@@ -309,19 +336,19 @@ func (b *Booker) CompleteBooking() error {
 		}
 		defer resp.Body.Close()
 
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Error reading response body: %v. Retrying... (%d/%d)", err, i+1, maxRetries)
+			continue
+		}
+
 		successful, err := isSuccessfulResponse(resp)
 		if err != nil {
 			return fmt.Errorf("error checking booking response: %w", err)
 		}
 
 		if successful {
-			body, err := io.ReadAll(resp.Body)
-
-			if err != nil {
-				log.Printf("Error reading response body: %v", err)
-			} else {
-				log.Printf("Booking successful. Request Body: %s", string(body)[:200]) // Print first 200 characters
-			}
+			log.Printf("Booking successful. Request Body: %s", string(body)[:200]) // Print first 200 characters
 			return nil
 		}
 

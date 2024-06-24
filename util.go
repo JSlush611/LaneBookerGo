@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 func setupBooker(booker *Booker) error {
 	initializeLaneMappings(booker)
-	calculateBookingTimes(booker)
 
 	if err := booker.NewClient(); err != nil {
 		return fmt.Errorf("error initializing new client: %w", err)
@@ -18,6 +16,7 @@ func setupBooker(booker *Booker) error {
 	}
 
 	booker.FormatLoginWebsite()
+
 	return nil
 }
 
@@ -33,10 +32,4 @@ func initializeLaneMappings(booker *Booker) {
 		95: 100000216,
 		96: 100000217,
 	}
-}
-
-func calculateBookingTimes(booker *Booker) {
-	booker.STime2 = booker.STime.Add(30 * time.Minute)
-	booker.ETime = booker.STime2
-	booker.ETime2 = booker.STime2.Add(30 * time.Minute)
 }

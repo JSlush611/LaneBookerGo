@@ -20,6 +20,7 @@ func basicAuthMiddleware(next http.Handler) http.Handler {
 		// Allow App Engine cron service
 		if r.Header.Get("X-AppEngine-Cron") == "true" {
 			next.ServeHTTP(w, r)
+
 			return
 		}
 
@@ -113,42 +114,35 @@ func initializeBookerFromRequest(r *http.Request) (*Booker, error) {
 	return booker, nil
 }
 
-func calculateBookingTime(booker *Booker) (time.Duration, error) {
-	loc, err := time.LoadLocation("America/Chicago")
-	if err != nil {
-		return 0, err
-	}
-
-	now := time.Now().In(loc)
-	targetTime := time.Date(now.Year(), now.Month(), now.Day(), 20, 45, 0, 0, loc)
-	var duration time.Duration
-
-	if now.Before(targetTime) {
-		duration = targetTime.Sub(now)
-	} else {
-		targetTime = targetTime.Add(24*time.Hour - 1*time.Nanosecond)
-		duration = targetTime.Sub(now)
-	}
-
-	return duration, nil
-}
-
-func conductBooking(booker *Booker, duration time.Duration) {
-	go func(dur time.Duration) {
-		log.Println("NOW SLEEPING FOR ", dur)
-
-		//time.Sleep(dur)
-
+func conductBooking(booker *Booker) {
+	go func() {
 		startTime := time.Now()
-		log.Println("NOW STARTING AT ", startTime.Format("15:04:05"))
+		log.Println("Booking started at", startTime.Format("15:04:05"))
 
-		booker.PerformLogin()
-		booker.PrepareBooking()
-		booker.CompleteBooking()
+		err := booker.PerformLogin()
+		if err != nil {
+			log.Printf("Error during login: %v", err)
+
+			return
+		}
+
+		err = booker.PrepareBooking()
+		if err != nil {
+			log.Printf("Error during booking preparation: %v", err)
+
+			return
+		}
+
+		err = booker.CompleteBooking()
+		if err != nil {
+			log.Printf("Error during booking completion: %v", err)
+
+			return
+		}
 
 		elapsed := time.Since(startTime)
-		log.Println("Booking Attempted In ", elapsed, " seconds")
-	}(duration)
+		log.Println("Booking attempted in", elapsed, "seconds")
+	}()
 }
 
 func Book(w http.ResponseWriter, r *http.Request) {
@@ -165,12 +159,7 @@ func Book(w http.ResponseWriter, r *http.Request) {
 
 	booker.LaneId = booker.LaneToTrin[booker.Lane]
 
-	duration, err := calculateBookingTime(booker)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conductBooking(booker, duration)
+	conductBooking(booker)
 
 	http.ServeFile(w, r, "static/scheduled.html")
 }
