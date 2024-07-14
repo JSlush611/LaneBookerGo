@@ -88,7 +88,7 @@ func SendBookRequests(ctx context.Context) error {
 		// https://mindbody-go.uc.r.appspot.com/book
 		// http://localhost:8080/book
 		fmt.Println("SENDING REQUEST WITH ", formData.Encode())
-		req, err := http.NewRequest("POST", "https://mindbody-go.uc.r.appspot.com/book", strings.NewReader(formData.Encode()))
+		req, err := http.NewRequest("POST", "http://localhost:8080/book", strings.NewReader(formData.Encode()))
 		if err != nil {
 			return fmt.Errorf("failed to create request: %v", err)
 		}

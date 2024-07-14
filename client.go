@@ -16,6 +16,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/corpix/uarand"
+	"golang.org/x/exp/rand"
 )
 
 const (
@@ -90,14 +91,26 @@ type Booker struct {
 }
 
 func (b *Booker) NewClient() error {
-	transport := &customTransport{}
+	transport := &customTransport{
+		http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS12,
+				CipherSuites: shuffleCipherSuites([]uint16{
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+					tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				}),
+			},
+		},
+	}
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return fmt.Errorf("error creating cookie jar: %w", err)
 	}
-
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	b.Client = &http.Client{
 		Jar:       jar,
@@ -107,6 +120,15 @@ func (b *Booker) NewClient() error {
 	b.UserAgent = uarand.GetRandom()
 
 	return nil
+}
+
+// Function to shuffle cipher suites
+func shuffleCipherSuites(cipherSuites []uint16) []uint16 {
+	rand.Seed(uint64(time.Now().UnixNano()))
+	rand.Shuffle(len(cipherSuites), func(i, j int) {
+		cipherSuites[i], cipherSuites[j] = cipherSuites[j], cipherSuites[i]
+	})
+	return cipherSuites
 }
 
 func (b *Booker) GetInitialCookies() error {
@@ -127,11 +149,39 @@ func (b *Booker) GetInitialCookies() error {
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("User-Agent", b.UserAgent)
 
+	fmt.Println("Sending Request Headers:")
+	for key, value := range req.Header {
+		fmt.Printf("%s: %s\n", key, value)
+	}
+
 	resp, err := b.Client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error getting cookies: %w", err)
 	}
 	defer resp.Body.Close()
+
+	fmt.Println("Response Status:", resp.Status)
+	fmt.Println("Response Headers:")
+	for key, value := range resp.Header {
+		fmt.Printf("%s: %s\n", key, value)
+	}
+
+	cookies := resp.Cookies()
+	fmt.Println("Cookies from Response:")
+	for _, cookie := range cookies {
+		fmt.Printf("%s: %s\n", cookie.Name, cookie.Value)
+	}
+
+	u, err := url.Parse("https://clients.mindbodyonline.com")
+	if err != nil {
+		return fmt.Errorf("error parsing URL: %w", err)
+	}
+
+	allCookies := b.Client.Jar.Cookies(u)
+	fmt.Println("All Cookies in Jar After Request:")
+	for _, cookie := range allCookies {
+		fmt.Printf("%s: %s\n", cookie.Name, cookie.Value)
+	}
 
 	return nil
 }
